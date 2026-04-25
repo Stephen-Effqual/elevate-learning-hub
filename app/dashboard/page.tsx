@@ -5,7 +5,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/sign-in");
   }
 
   // Route to appropriate dashboard based on role
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     case "PARENT":
       redirect("/parent");
     case "STUDENT":
-      redirect("/student");
+      redirect("/chat");
     default:
       redirect("/redeem");
   }
