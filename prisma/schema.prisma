@@ -1,0 +1,166 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/elevate_learning_hub/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application models
+enum UserRole {
+  STUDENT
+  PARENT
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  password      String
+  role          UserRole  @default(STUDENT)
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Application relations
+  conversations      Conversation[]
+  uploadedFiles      UploadedFile[]
+  usageTracking      UsageTracking[]
+  reportsGenerated   Report[]       @relation("GeneratedReports")
+  
+  // Student-Parent relationships
+  linkedParents      StudentParentLink[] @relation("StudentLinks")
+  linkedStudents     StudentParentLink[] @relation("ParentLinks")
+  
+  // Session feedback
+  sessionFeedback    SessionFeedback[]
+}
+
+model StudentParentLink {
+  id        String   @id @default(cuid())
+  studentId String
+  parentId  String
+  createdAt DateTime @default(now())
+
+  student   User @relation("StudentLinks", fields: [studentId], references: [id], onDelete: Cascade)
+  parent    User @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, parentId])
+  @@index([studentId])
+  @@index([parentId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  studentId String
+  message   String   @db.Text
+  role      String   // 'user' or 'assistant'
+  timestamp DateTime @default(now())
+
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, timestamp])
+}
+
+model UploadedFile {
+  id                String   @id @default(cuid())
+  studentId         String
+  filename          String
+  cloudStoragePath  String   // S3 key
+  isPublic          Boolean  @default(false)
+  fileSize          Int?     // in bytes
+  contentType       String?
+  uploadedAt        DateTime @default(now())
+
+  student           User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model UsageTracking {
+  id           String   @id @default(cuid())
+  studentId    String
+  date         DateTime @db.Date
+  messageCount Int      @default(0)
+
+  student      User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([studentId, date])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  studentId      String
+  generatedAt    DateTime @default(now())
+  reportContent  String   @db.Text // JSON string containing report data
+  pdfPath        String?  // S3 key for the PDF file
+
+  student        User @relation("GeneratedReports", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model SessionFeedback {
+  id                    String   @id @default(cuid())
+  studentId             String
+  accuracy              Int      // 1-5 rating
+  helpfulness           Int      // 1-5 rating
+  understanding         Int      // 1-5 rating
+  friendliness          Int      // 1-5 rating
+  responseSpeed         Int      // 1-5 rating
+  nceaRelevance         Int      // 1-5 rating
+  additionalComments    String?  @db.Text
+  submittedAt           DateTime @default(now())
+
+  student               User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([submittedAt])
+}
