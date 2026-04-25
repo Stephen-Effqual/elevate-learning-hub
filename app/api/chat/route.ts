@@ -150,7 +150,7 @@ MODE: REPORTING
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== "STUDENT") {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -160,40 +160,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Check usage limit
-    const usage = await checkUsageLimit(user.id);
-    if (!usage.allowed) {
-      return NextResponse.json(
-        { error: "Daily message limit reached. Try again tomorrow." },
-        { status: 429 }
-      );
+    // Save user message (non-fatal if DB not set up for Clerk IDs yet)
+    try {
+      await prisma.conversation.create({
+        data: {
+          studentId: user.id,
+          message,
+          role: "user",
+        },
+      });
+    } catch (e) {
+      console.error("Failed to save user message:", e);
     }
 
-    // Increment usage
-    await incrementUsage(user.id);
-
-    // Save user message
-    await prisma.conversation.create({
-      data: {
-        studentId: user.id,
-        message,
-        role: "user",
-      },
-    });
-
     // Get conversation history (last 40 messages for full session awareness)
-    const conversationHistory = await prisma.conversation.findMany({
-      where: { studentId: user.id },
-      orderBy: { timestamp: "desc" },
-      take: 40,
-    });
+    let historyMessages: { role: string; content: string }[] = [];
+    try {
+      const conversationHistory = await prisma.conversation.findMany({
+        where: { studentId: user.id },
+        orderBy: { timestamp: "desc" },
+        take: 40,
+      });
 
-    const historyMessages = conversationHistory
-      .reverse()
-      .map((msg) => ({
-        role: msg.role,
-        content: msg.message,
-      }));
+      historyMessages = conversationHistory
+        .reverse()
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.message,
+        }));
+    } catch (e) {
+      console.error("Failed to fetch conversation history:", e);
+    }
 
     // Load all NZQA knowledge bases (History, Literacy, Numeracy)
     let nzqaContext = "";
@@ -296,13 +293,17 @@ export async function POST(request: Request) {
 
           // Save assistant response
           if (fullResponse) {
-            await prisma.conversation.create({
-              data: {
-                studentId: user.id,
-                message: fullResponse,
-                role: "assistant",
-              },
-            });
+            try {
+              await prisma.conversation.create({
+                data: {
+                  studentId: user.id,
+                  message: fullResponse,
+                  role: "assistant",
+                },
+              });
+            } catch (e) {
+              console.error("Failed to save assistant message:", e);
+            }
           }
         } catch (error) {
           console.error("Stream error:", error);
