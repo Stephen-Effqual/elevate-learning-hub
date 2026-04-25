@@ -38,12 +38,12 @@ export async function GET() {
     let avgNceaRelevance = 0;
 
     if (totalFeedback > 0) {
-      avgAccuracy = feedback.reduce((sum, f) => sum + f.accuracy, 0) / totalFeedback;
-      avgHelpfulness = feedback.reduce((sum, f) => sum + f.helpfulness, 0) / totalFeedback;
-      avgUnderstanding = feedback.reduce((sum, f) => sum + f.understanding, 0) / totalFeedback;
-      avgFriendliness = feedback.reduce((sum, f) => sum + f.friendliness, 0) / totalFeedback;
-      avgResponseSpeed = feedback.reduce((sum, f) => sum + f.responseSpeed, 0) / totalFeedback;
-      avgNceaRelevance = feedback.reduce((sum, f) => sum + f.nceaRelevance, 0) / totalFeedback;
+      avgAccuracy = feedback.reduce((sum: number, f) => sum + f.accuracy, 0) / totalFeedback;
+      avgHelpfulness = feedback.reduce((sum: number, f) => sum + f.helpfulness, 0) / totalFeedback;
+      avgUnderstanding = feedback.reduce((sum: number, f) => sum + f.understanding, 0) / totalFeedback;
+      avgFriendliness = feedback.reduce((sum: number, f) => sum + f.friendliness, 0) / totalFeedback;
+      avgResponseSpeed = feedback.reduce((sum: number, f) => sum + f.responseSpeed, 0) / totalFeedback;
+      avgNceaRelevance = feedback.reduce((sum: number, f) => sum + f.nceaRelevance, 0) / totalFeedback;
     }
 
     const overallAverage = totalFeedback > 0
