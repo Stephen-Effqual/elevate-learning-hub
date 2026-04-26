@@ -1,22 +1,16 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function getCurrentUser() {
-  const { userId, sessionClaims } = await auth();
-  if (!userId) return null;
-
-  const user = await currentUser();
-  if (!user) return null;
-
-  // role is injected via custom JWT template in Clerk → Configure → Sessions
-  const role = (sessionClaims?.role as string) ?? "STUDENT";
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return null;
 
   return {
-    id: userId,
-    clerkId: userId,
-    role,
-    username: user.username ?? user.emailAddresses[0]?.emailAddress ?? "",
-    name: user.fullName ?? "",
-    email: user.emailAddresses[0]?.emailAddress ?? "",
+    id: session.user.id as string,
+    role: session.user.role as string,
+    username: session.user.username as string,
+    name: (session.user.name as string) ?? "",
+    email: (session.user.email as string) ?? "",
   };
 }
 

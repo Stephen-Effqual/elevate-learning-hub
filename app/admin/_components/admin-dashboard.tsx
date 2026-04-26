@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, LogOut, Users, BarChart3, Link2, MessageSquare, Star, Key } from "lucide-react";
+import { BookOpen, LogOut, Users, BarChart3, Link2, MessageSquare, Star } from "lucide-react";
 import UserManagement from "./user-management";
 import LinkManagement from "./link-management";
 import StatsOverview from "./stats-overview";
 import ConversationLogs from "./conversation-logs";
 import FeedbackManagement from "./feedback-management";
-import AccessCodesPanel from "./access-codes-panel";
 
 export default function AdminDashboard({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState("stats");
-  const { signOut } = useClerk();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50">
@@ -33,7 +31,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => signOut({ redirectUrl: "/sign-in" })}
+            onClick={() => signOut({ callbackUrl: "/login" })}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Logout
@@ -43,7 +41,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="stats" className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4" />
               <span>Statistics</span>
@@ -63,10 +61,6 @@ export default function AdminDashboard({ user }: { user: any }) {
             <TabsTrigger value="feedback" className="flex items-center space-x-2">
               <Star className="w-4 h-4" />
               <span>Feedback</span>
-            </TabsTrigger>
-            <TabsTrigger value="access-codes" className="flex items-center space-x-2">
-              <Key className="w-4 h-4" />
-              <span>Access Codes</span>
             </TabsTrigger>
           </TabsList>
 
@@ -88,10 +82,6 @@ export default function AdminDashboard({ user }: { user: any }) {
 
           <TabsContent value="feedback">
             <FeedbackManagement />
-          </TabsContent>
-
-          <TabsContent value="access-codes">
-            <AccessCodesPanel />
           </TabsContent>
         </Tabs>
       </div>

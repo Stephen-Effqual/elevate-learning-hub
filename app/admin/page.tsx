@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import AdminDashboard from "./_components/admin-dashboard";
 
 export default async function AdminPage() {
-  const { userId, sessionClaims } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
-    redirect("/sign-in");
+  if (!user) {
+    redirect("/login");
   }
 
-  if (sessionClaims?.role !== "admin") {
+  if (user.role !== "ADMIN") {
     redirect("/dashboard");
   }
 
-  return <AdminDashboard user={{ id: userId }} />;
+  return <AdminDashboard user={user} />;
 }

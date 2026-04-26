@@ -6,7 +6,7 @@ export default async function StudentPage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   return <StudentDashboard user={user} />;
