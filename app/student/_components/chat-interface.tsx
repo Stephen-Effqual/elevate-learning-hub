@@ -5,6 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, FileText, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+
+function prepareMarkdown(text: string): string {
+  // Strip ```mcq ... ``` fences so math inside renders correctly
+  text = text.replace(/```mcq\n?([\s\S]*?)```/g, "$1");
+
+  // Convert \[...\] → $$...$$ and \(...\) → $...$ using split/join
+  // (avoids regex backslash-escape ambiguity across JS engines)
+  text = text.split("\\[").join("\n$$\n");
+  text = text.split("\\]").join("\n$$\n");
+  text = text.split("\\(").join("$");
+  text = text.split("\\)").join("$");
+
+  return text;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -193,7 +210,18 @@ export default function ChatInterface() {
                     : "bg-gray-100 text-gray-900"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {prepareMarkdown(msg.content)}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
               </div>
             </div>
           ))

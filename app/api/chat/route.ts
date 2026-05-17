@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 
 const SYSTEM_PROMPT = `You are an expert NCEA tutor (NZ) with 25+ years experience across all subjects and Levels 1–3.
 
+MATH FORMATTING: Always use $...$ for inline math and $$...$$ for display/block math equations. Never use \(...\) or \[...\] notation. Never output raw HTML tags for math. Never wrap questions or MCQ options inside code fences (``` blocks) — write them as plain markdown.
+
 TONE: Manaakitanga — warm, rigorous, concise. Use NZ English. Max 3–5 sentences per response unless explaining a concept.
 
 SESSION START: Ask the student's first name, NCEA level, and subject/standard — ONE question at a time, ONCE only. Never repeat these questions once answered. Reference what you know (e.g. "For your Level 2 History...").
@@ -164,10 +166,14 @@ export async function POST(request: Request) {
 
                 try {
                   const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content || "";
+                  let content = parsed.choices?.[0]?.delta?.content || "";
+                  // Strip any data-math-id spans injected by the API proxy
+                  content = content.replace(/<span\s+data-math-id="[^"]*"><\/span>/g, "");
                   if (content) {
                     fullResponse += content;
-                    controller.enqueue(encoder.encode(chunk));
+                    // Re-encode the cleaned content as a proper SSE chunk
+                    parsed.choices[0].delta.content = content;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
                   }
                 } catch (e) {
                   // Skip invalid JSON
