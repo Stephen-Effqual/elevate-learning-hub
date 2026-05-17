@@ -13,12 +13,13 @@ function prepareMarkdown(text: string): string {
   // Strip ```mcq ... ``` fences so math inside renders correctly
   text = text.replace(/```mcq\n?([\s\S]*?)```/g, "$1");
 
-  // Convert \[...\] → $$...$$ and \(...\) → $...$ using split/join
-  // (avoids regex backslash-escape ambiguity across JS engines)
-  text = text.split("\\[").join("\n$$\n");
-  text = text.split("\\]").join("\n$$\n");
-  text = text.split("\\(").join("$");
-  text = text.split("\\)").join("$");
+  // Convert \[...\] → $$...$$ (display math)
+  // Capture + trim inner content: remark-math rejects $$ blocks with leading/trailing whitespace
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, inner) => `\n$$\n${inner.trim()}\n$$\n`);
+
+  // Convert \(...\) → $...$ (inline math)
+  // Capture + trim inner content: remark-math rejects $ x $ (space after opening $)
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, inner) => `$${inner.trim()}$`);
 
   return text;
 }
